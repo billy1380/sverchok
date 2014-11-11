@@ -62,7 +62,7 @@ class SvGetDataObjectNode(bpy.types.Node, SverchCustomTreeNode):
             col.prop_search(self, 'group_name', bpy.data, 'groups', text='', icon='HAND')
 
     def sv_init(self, context):
-        self.outputs.new('VerticesSocket', "Objects", "Objects")
+        self.outputs.new('VerticesSocket', "data.object")
 
     def process(self):
 
@@ -87,8 +87,8 @@ class SvGetDataObjectNode(bpy.types.Node, SverchCustomTreeNode):
                 if i.type == self.Modes:
                     Objects.append(i)
 
-        if outputs['Objects'].links:
-            SSSAT(self, 'Objects', [Objects])
+        if outputs['data.object'].links:
+            SSSAT(self, 'data.object', [Objects])
 
     def update_socket(self, context):
         self.update()
