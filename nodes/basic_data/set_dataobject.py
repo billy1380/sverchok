@@ -40,7 +40,7 @@ class SvSetDataObjectNode(bpy.types.Node, SverchCustomTreeNode):
         ("delta_location",   "Delta_Location",   "", 4),
         ("delta_scale",   "Delta_Scale",   "", 5),
         ("delta_rotation_euler",   "Delta_Rotation_Euler",   "", 6),
-        ("custom",   "Custom",   "", 7)
+        ("custom",   "User Defined",   "", 7)
     ]
 
     formula = StringProperty(name='formula',
@@ -57,14 +57,14 @@ class SvSetDataObjectNode(bpy.types.Node, SverchCustomTreeNode):
         layout.prop(self, "Modes", "Objects property")
 
     def sv_init(self, context):
-        self.inputs.new('VerticesSocket', 'Objects')
+        self.inputs.new('VerticesSocket', 'data.object')
         self.inputs.new('VerticesSocket', 'values')
 
     def process(self):
         SGSAT = SvGetSocketAnyType
-        if self.inputs['Objects'].links and self.inputs['values'].links:
+        if self.inputs['data.object'].links and self.inputs['values'].links:
 
-            ObjectID = SGSAT(self, self.inputs['Objects'])[0]
+            ObjectID = SGSAT(self, self.inputs['data.object'])[0]
             if isinstance(SGSAT(self, self.inputs['values'])[0][0],(tuple)):
                 Val = [Vector(i) for i in SGSAT(self, self.inputs['values'])[0]]
             else:
