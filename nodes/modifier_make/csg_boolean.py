@@ -34,10 +34,8 @@ def Boolean(VA, PA, VB, PB, operation):
     if not all([VA, PA, VB, PB]):
         return False, False
 
-    # a = CSG.Obj_from_pydata(VA, PA)
-    # b = CSG.Obj_from_pydata(VB, PB)
-    a = CSG.cube()
-    b = CSG.cube([0.5, 0.5, 0.0])
+    a = CSG.Obj_from_pydata(VA, PA)
+    b = CSG.Obj_from_pydata(VB, PB)
 
     faces = []
     vertices = []
@@ -56,18 +54,19 @@ def Boolean(VA, PA, VB, PB, operation):
 
     sys.setrecursionlimit(recursionlimit)
 
+    vert_index = {}
     for polygon in polygons:
-        indices = []
-        for v in polygon.vertices:
-            pos = [v.pos.x, v.pos.y, v.pos.z]
-            if not pos in vertices:
-                vertices.append(pos)
-            index = vertices.index(pos)
-            indices.append(index)
+        face = []
+        for vertex in polygon.vertices:
+            pos = (vertex.pos.x, vertex.pos.y, vertex.pos.z)
+            vert_key = hash(pos)
+            if vert_key not in vert_index:
+                vertices.append(list(pos))
+                vert_index[vert_key] = len(vertices) - 1
+            face.append(vert_index[vert_key])
+        faces.append(face)
 
-        faces.append(indices)
-
-    return verts, faces
+    return vertices, faces
 
 
 class SvCSGBooleanNode(bpy.types.Node, SverchCustomTreeNode):
@@ -116,8 +115,8 @@ class SvCSGBooleanNode(bpy.types.Node, SverchCustomTreeNode):
 
         verts_out, polys_out = Boolean(VA, PA, VB, PB, self.selected_mode)
 
-        self.outputs['Vertices'].sv_set(verts_out)
-        self.outputs['Polygons'].sv_set(polys_out)
+        self.outputs['Vertices'].sv_set([verts_out])
+        self.outputs['Polygons'].sv_set([polys_out])
 
 
 def register():

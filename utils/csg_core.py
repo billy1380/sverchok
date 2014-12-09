@@ -1,5 +1,6 @@
 import math
 from sverchok.utils.csg_geom import *
+from sverchok.utils.sv_bmesh_utils import bmesh_from_pydata
 
 
 class CSG(object):
@@ -55,18 +56,19 @@ class CSG(object):
     """
     def __init__(self):
         self.polygons = []
-    
-    @classmethod
-    def fromPolygons(cls, polygons):
+        
+    @staticmethod
+    def fromPolygons(polygons):
         csg = CSG()
         csg.polygons = polygons
         return csg
-    
+
     def clone(self):
         csg = CSG()
-        csg.polygons = map(lambda p: p.clone(), self.polygons)
+        for p in self.polygons:
+            csg.polygons.append(p.clone())
         return csg
-        
+
     def toPolygons(self):
         return self.polygons
         
@@ -157,11 +159,12 @@ class CSG(object):
         not modified.
         """
         csg = self.clone()
-        map(lambda p: p.flip(), csg.polygons)
+        for polygon in csg.polygons:
+            polygon.flip()
         return csg
     
-    @classmethod
-    def cube(cls, center=[0,0,0], radius=[1,1,1]):
+    @staticmethod
+    def cube(center=[0,0,0], radius=[1,1,1]):
         """
         Construct an axis-aligned solid cuboid. Optional parameters are `center` and
         `radius`, which default to `[0, 0, 0]` and `[1, 1, 1]`. The radius can be
@@ -180,29 +183,32 @@ class CSG(object):
         if isinstance(radius, list): r = radius
         else: r = [radius, radius, radius]
 
-        polygons = map(
-            lambda v: Polygon( 
-                map(lambda i: 
-                    Vertex(
-                        Vector(
-                            c.x + r[0] * (2 * bool(i & 1) - 1),
-                            c.y + r[1] * (2 * bool(i & 2) - 1),
-                            c.z + r[2] * (2 * bool(i & 4) - 1)
-                        ), 
-                        None
-                    ), v[0])),
-                    [
+        verts_normals = [
                         [[0, 4, 6, 2], [-1, 0, 0]],
                         [[1, 3, 7, 5], [+1, 0, 0]],
                         [[0, 1, 5, 4], [0, -1, 0]],
                         [[2, 6, 7, 3], [0, +1, 0]],
                         [[0, 2, 3, 1], [0, 0, -1]],
                         [[4, 5, 7, 6], [0, 0, +1]]
-                    ])
+                    ]
+
+        polygons = []
+
+        for group in verts_normals:
+            vertices = []
+            for i in group[0]:
+                vertices.append(Vertex(Vector(
+                            c.x + r[0] * (2 * bool(i & 1) - 1),
+                            c.y + r[1] * (2 * bool(i & 2) - 1),
+                            c.z + r[2] * (2 * bool(i & 4) - 1)
+                        ), Vector(group[1])))
+
+            polygons.append(Polygon(vertices))
+            
         return CSG.fromPolygons(polygons)
         
-    @classmethod
-    def sphere(cls, **kwargs):
+    @staticmethod
+    def sphere(**kwargs):
         """ Returns a sphere.
             
             Kwargs:
@@ -248,8 +254,8 @@ class CSG(object):
                 
         return CSG.fromPolygons(polygons)
     
-    @classmethod
-    def cylinder(cls, **kwargs):
+    @staticmethod
+    def cylinder(**kwargs):
         """ Returns a cylinder.
             
             Kwargs:
@@ -300,17 +306,18 @@ class CSG(object):
         
         return CSG.fromPolygons(polygons)
 
-    @classmethod
-    def Obj_from_pydata(cls, verts, faces):
+    @staticmethod
+    def Obj_from_pydata(verts, faces):
         """
 
         """
+        bm = bmesh_from_pydata(verts, [], faces)
         polygons = []
         for face in faces:
-            polyg = []
+            verticies = []
             for idx in face:
-                co = verts[idx]
-                polyg.append(Vertex(co))
-            polygons.append(polyg)
+                verticies.append(Vertex(Vector(verts[idx]), Vector(bm.verts[idx].normal)))
+            polygons.append(Polygon(verticies))
+        bm.free()
 
         return CSG.fromPolygons(polygons)
