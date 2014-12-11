@@ -1,78 +1,46 @@
 import math
 
+def times(v, a):
+    return [v.x * a, v.y * a, v.z * a]
 
-#Represents a 3D vector.
-#
-#Example usage:
-#
-#  CSG.Vector(1, 2, 3);
-#  CSG.Vector([1, 2, 3]);
-#  CSG.Vector({ x: 1, y: 2, z: 3 });
-class Vector(object):
-    def __init__(self, o):
-        self.x = o[0]
-        self.y = o[1]
-        self.z = o[2]
-        
-    def clone(self):
-        return Vector([self.x, self.y, self.z])
+def dividedBy(v, a):
+    return [v.x / a, v.y / a, v.z / a]
 
-    def times(self, a):
-        return Vector([self.x * a, self.y * a, self.z * a])
+def plus(v, a):
+    return [self.x + a.x, self.y + a.y, self.z + a.z]
 
-    def dividedBy(self, a):
-        return Vector([self.x / a, self.y / a, self.z / a])
+def minus(v, a):
+    return [self.x - a.x, self.y - a.y, self.z - a.z]
 
-    def plus(self, a):
-        return Vector([self.x + a.x, self.y + a.y, self.z + a.z])
+def unit(v):
+    return dividedBy(v, v.length())
 
-    def minus(self, a):
-        return Vector([self.x - a.x, self.y - a.y, self.z - a.z])
+def length(v):
+    return math.sqrt(v.dot(v))
 
-    def unit(self):
-        return self.dividedBy(self.length())
+def dot(v, a):
+    return v.x * a.x + v.y * a.y + v.z * a.z
 
-    def length(self):
-        return math.sqrt(self.dot(self))
+def cross(v, a):
+    return [v.y * a.z - v.z * a.y, v.z * a.x - v.x * a.z, v.x * a.y - v.y * a.x]
 
-    def dot(self, a):
-        return self.x * a.x + self.y * a.y + self.z * a.z
+def negated(v):
+    return [-self.x, -self.y, -self.z]
 
-    def cross(self, a):
-        return Vector([self.y * a.z - self.z * a.y, self.z * a.x - self.x * a.z, self.x * a.y - self.y * a.x])
+def lerp(v, a, t):
+    return plus(v, times(minus(a, v), t))
 
-    def negated(self):
-        return Vector([-self.x, -self.y, -self.z])
 
-    def lerp(self, a, t):
-        return self.plus(a.minus(self).times(t))
+# Invert all orientation-specific data (e.g. vertex normal). Called when the
+# orientation of a polygon is flipped.
+def flip(v):
+    v[1] = negated(v[1])
 
-#Represents a vertex of a polygon. Use your own vertex class instead of this
-#one to provide additional features like texture coordinates and vertex
-#colors. Custom vertex classes need to provide a `pos` property and `clone()`,
-#`flip()`, and `interpolate()` methods that behave analogous to the ones
-#defined by `CSG.Vertex`. This class provides `normal` so convenience
-#functions like `CSG.sphere()` can return a smooth vertex normal, but `normal`
-#is not used anywhere else.
-class Vertex(object):
-
-    def __init__(self, pos, normal):
-        self.pos = pos.clone()
-        self.normal = normal.clone()
-
-    def clone(self):
-        return Vertex(self.pos.clone(), self.normal.clone())
-
-    # Invert all orientation-specific data (e.g. vertex normal). Called when the
-    # orientation of a polygon is flipped.
-    def flip(self):
-        self.normal = self.normal.negated()
-
-    # Create a vertex between this vertex and `other` by linearly
-    # interpolating all properties using a parameter of `t`. Subclasses should
-    # override this to interpolate additional properties.
-    def interpolate(self, other, t):
-        return Vertex(self.pos.lerp(other.pos, t), self.normal.lerp(other.normal, t))
+# Create a vertex between this vertex and `other` by linearly
+# interpolating all properties using a parameter of `t`. Subclasses should
+# override this to interpolate additional properties.
+def interpolate(v, other, t):
+    return [lerp(v[0], other[0], t), lerp(v[1], other[1], t)]
     
 #Holds a node in a BSP tree. A BSP tree is built from a collection of polygons
 #by picking a polygon to split along. That polygon (and all other coplanar
@@ -283,7 +251,7 @@ class Polygon:
     def __init__(self, vertices, shared = None):
         self.vertices = vertices
         self.shared = shared
-        self.plane = Plane.fromPoints(vertices[0].pos, vertices[1].pos, vertices[2].pos)
+        self.plane = Plane.fromPoints(vertices[0][0], vertices[1][0], vertices[2][0])
 
     def clone(self):
         vertexClone = []
@@ -297,6 +265,6 @@ class Polygon:
         self.vertices.reverse()
 
         for vertex in self.vertices:
-            vertex.flip()
+            flip(vertex)
 
         self.plane.flip()

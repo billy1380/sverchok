@@ -177,9 +177,9 @@ class CSG(object):
               radius=1
             )
         """
-        c = Vector(0, 0, 0)
+        c = [0, 0, 0]
         r = [1, 1, 1]
-        if isinstance(center, list): c = Vector(center)
+        if isinstance(center, list): c = center
         if isinstance(radius, list): r = radius
         else: r = [radius, radius, radius]
 
@@ -197,11 +197,11 @@ class CSG(object):
         for group in verts_normals:
             vertices = []
             for i in group[0]:
-                vertices.append(Vertex(Vector(
-                            c.x + r[0] * (2 * bool(i & 1) - 1),
-                            c.y + r[1] * (2 * bool(i & 2) - 1),
-                            c.z + r[2] * (2 * bool(i & 4) - 1)
-                        ), Vector(group[1])))
+                vertices.append([[
+                            c[0] + r[0] * (2 * bool(i & 1) - 1),
+                            c[1] + r[1] * (2 * bool(i & 2) - 1),
+                            c[2] + r[2] * (2 * bool(i & 4) - 1)
+                        ], [group[1]]])
 
             polygons.append(Polygon(vertices))
             
@@ -223,7 +223,7 @@ class CSG(object):
         center = kwargs.get('center', [0.0, 0.0, 0.0])
         if isinstance(center, float):
             center = [center, center, center]
-        c = Vector(center)
+        c = center
         r = kwargs.get('radius', 1.0)
         if isinstance(r, list) and len(r) > 2:
             r = r[0]
@@ -235,11 +235,11 @@ class CSG(object):
         def vertex(vertices, theta, phi):
             theta *= math.pi * 2.0
             phi *= math.pi
-            d = Vector(
+            d = [
                 math.cos(theta) * math.sin(phi),
                 math.cos(phi),
-                math.sin(theta) * math.sin(phi))
-            vertices.append(Vertex(c.plus(d.times(r)), d))
+                math.sin(theta) * math.sin(phi)]
+            vertices.append([plus(c, times(d, r)), d])
             
         for i in range(0, slices):
             for j in range(0, stacks):
@@ -267,32 +267,28 @@ class CSG(object):
                 
                 slices (int): Number of slices, default 16.
         """
-        s = kwargs.get('start', Vector(0.0, -1.0, 0.0))
-        e = kwargs.get('end', Vector(0.0, 1.0, 0.0))
-        if isinstance(s, list):
-            s = Vector(*s)
-        if isinstance(e, list):
-            e = Vector(*e)
+        s = kwargs.get('start', [0.0, -1.0, 0.0])
+        e = kwargs.get('end', [0.0, 1.0, 0.0])
         r = kwargs.get('radius', 1.0)
         slices = kwargs.get('slices', 16)
-        ray = e.minus(s)
+        ray = minus(e, s)
         
-        axisZ = ray.unit()
-        isY = (math.fabs(axisZ.y) > 0.5)
-        axisX = Vector(float(isY), float(not isY), 0).cross(axisZ).unit()
-        axisY = axisX.cross(axisZ).unit()
-        start = Vertex(s, axisZ.negated())
-        end = Vertex(e, axisZ.unit())
+        axisZ = unit(ray)
+        isY = (math.fabs(axisZ[1]) > 0.5)
+        axisX = unit(cross([float(isY), float(not isY), 0], axisZ))
+        axisY = unit(cross(axisX, axisZ))
+        start = [s, negated(axisZ)]
+        end = [e, unit(axisZ)]
         polygons = []
         
         def point(stack, slice, normalBlend):
             angle = slice * math.pi * 2.0
-            out = axisX.times(math.cos(angle)).plus(
-                axisY.times(math.sin(angle)))
-            pos = s.plus(ray.times(stack)).plus(out.times(r))
-            normal = out.times(1.0 - math.fabs(normalBlend)).plus(
-                axisZ.times(normalBlend))
-            return Vertex(pos, normal)
+            out = plus(times(axisX, math.cos(angle)),
+                times(axisY, math.sin(angle)))
+            pos = plus(plus(s, times(ray, stack)), times(out, r))
+            normal = plus(times(out, 1.0 - math.fabs(normalBlend)),
+                times(axisZ, normalBlend))
+            return [pos, normal]
             
         for i in range(0, slices):
             t0 = i / float(slices)
@@ -316,7 +312,7 @@ class CSG(object):
         for face in faces:
             verticies = []
             for idx in face:
-                verticies.append(Vertex(Vector(verts[idx]), Vector(bm.verts[idx].normal)))
+                verticies.append([verts[idx], bm.verts[idx][1]])
             polygons.append(Polygon(verticies))
         bm.free()
 

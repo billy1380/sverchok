@@ -27,7 +27,6 @@ from sverchok.data_structure import updateNode
 from sverchok.utils.sv_bmesh_utils import bmesh_from_pydata
 
 from sverchok.utils.csg_core import CSG
-from sverchok.utils.csg_geom import Vertex, Vector   # these may prove redundant.
 
 
 def Boolean(VA, PA, VB, PB, operation):
@@ -89,9 +88,9 @@ class SvCSGBooleanNode(bpy.types.Node, SverchCustomTreeNode):
 
     def sv_init(self, context):
         self.inputs.new('VerticesSocket', 'Verts A')
-        self.inputs.new('StringsSocket',  'Polys A')
+        self.inputs.new('StringsSocket', 'Polys A')
         self.inputs.new('VerticesSocket', 'Verts B')
-        self.inputs.new('StringsSocket',  'Polys B')
+        self.inputs.new('StringsSocket', 'Polys B')
 
         self.outputs.new('VerticesSocket', 'Vertices', 'Vertices')
         self.outputs.new('StringsSocket', 'Polygons', 'Polygons')
@@ -112,7 +111,7 @@ class SvCSGBooleanNode(bpy.types.Node, SverchCustomTreeNode):
         PA = self.inputs['Polys A'].sv_get()[0]
         VB = self.inputs['Verts B'].sv_get()[0]
         PB = self.inputs['Polys B'].sv_get()[0]
-
+        
         verts_out, polys_out = Boolean(VA, PA, VB, PB, self.selected_mode)
 
         self.outputs['Vertices'].sv_set([verts_out])
